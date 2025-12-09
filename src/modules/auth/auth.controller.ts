@@ -5,6 +5,7 @@ import { AuthService } from './auth.service'
 import { LoginDto } from './dto/login.dto'
 import { RefreshTokenDto } from './dto/refresh-token.dto'
 import { UsersService } from '../users/users.service'
+import { RegisterDto } from './dto/register.dto'
 
 @ApiTags('auth')
 @Controller('auth')
@@ -24,6 +25,12 @@ export class AuthController {
   async refresh(@Body() body: RefreshTokenDto) {
     const payload = await this.authService.verifyRefreshToken(body.refreshToken)
     const user = await this.usersService.findById(payload.sub)
+    return this.authService.login(user)
+  }
+
+  @Post('register')
+  async register(@Body() body: RegisterDto) {
+    const user = await this.authService.register(body)
     return this.authService.login(user)
   }
 }

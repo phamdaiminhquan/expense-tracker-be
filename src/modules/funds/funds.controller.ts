@@ -23,7 +23,7 @@ import { AddFundMemberDto } from './dto/add-member.dto'
 @UseGuards(JwtAccessGuard)
 @Controller('funds')
 export class FundsController {
-  constructor(private readonly fundsService: FundsService) {}
+  constructor(private readonly fundsService: FundsService) { }
 
   @Get()
   async list(@CurrentUser() user: JwtPayload) {

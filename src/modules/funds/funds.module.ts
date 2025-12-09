@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 
-import { Fund } from './fund.entity'
-import { FundMember } from './fund-member.entity'
+import { Fund } from './entity/fund.entity'
+import { FundMember } from './entity/fund-member.entity'
 import { FundsService } from './funds.service'
 import { FundsController } from './funds.controller'
 

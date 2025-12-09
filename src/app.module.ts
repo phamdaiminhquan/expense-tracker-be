@@ -31,7 +31,7 @@ import { StatisticsModule } from './modules/statistics/statistics.module'
         type: 'postgres' as const,
         url: configService.getOrThrow<string>('database.url'),
         autoLoadEntities: true,
-        synchronize: false,
+        synchronize: true,
         logging: configService.get<boolean>('database.logging', false),
         logger: new DatabaseLogger(),
         ssl: {

@@ -1,10 +1,9 @@
 import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm'
 
-import { Fund } from '../funds/fund.entity'
+import { Fund } from '../funds/entity/fund.entity'
 import { Category } from '../categories/category.entity'
 import { BaseEntity } from '../../common/base.entity'
-
-export type TransactionStatus = 'pending' | 'processed' | 'failed'
+import { TransactionStatus } from './enums/transaction-status.enum'
 
 @Entity('transactions')
 export class Transaction extends BaseEntity {
@@ -18,7 +17,7 @@ export class Transaction extends BaseEntity {
   @Column()
   userName!: string
 
-  @Column({ type: 'enum', enum: ['pending', 'processed', 'failed'], default: 'pending' })
+  @Column({ type: 'enum', enum: TransactionStatus, default: TransactionStatus.PENDING })
   status!: TransactionStatus
 
   @Column({ type: 'text' })

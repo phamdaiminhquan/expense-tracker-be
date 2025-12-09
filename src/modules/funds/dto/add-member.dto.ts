@@ -1,11 +1,14 @@
 import { IsEnum, IsUUID } from 'class-validator'
+import { ApiProperty } from '@nestjs/swagger'
 
-import { FundMemberRole } from '../fund-member.entity'
+import { FundMemberRole } from '../enums/fund-member-role.enum'
 
 export class AddFundMemberDto {
+  @ApiProperty({ format: 'uuid' })
   @IsUUID()
   userId!: string
 
-  @IsEnum(['owner', 'member'])
+  @ApiProperty({ enum: FundMemberRole, example: FundMemberRole.MEMBER })
+  @IsEnum(FundMemberRole)
   role!: FundMemberRole
 }

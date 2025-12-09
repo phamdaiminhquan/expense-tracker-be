@@ -2,10 +2,11 @@ import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/commo
 import { InjectRepository } from '@nestjs/typeorm'
 import { In, Repository } from 'typeorm'
 
-import { Fund } from './fund.entity'
-import { FundMember, FundMemberRole } from './fund-member.entity'
+import { Fund } from './entity/fund.entity'
+import { FundMember } from './entity/fund-member.entity'
 import { CreateFundDto } from './dto/create-fund.dto'
 import { UpdateFundDto } from './dto/update-fund.dto'
+import { FundMemberRole } from './enums/fund-member-role.enum'
 
 @Injectable()
 export class FundsService {
@@ -31,7 +32,7 @@ export class FundsService {
       this.memberRepository.create({
         fundId: savedFund.id,
         userId: memberId,
-        role: memberId === ownerId ? 'owner' : 'member',
+        role: memberId === ownerId ? FundMemberRole.OWNER : FundMemberRole.MEMBER,
       }),
     )
 

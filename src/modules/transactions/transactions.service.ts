@@ -4,11 +4,12 @@ import { QueryDeepPartialEntity, Repository } from 'typeorm'
 import { InjectQueue } from '@nestjs/bullmq'
 import { Queue } from 'bullmq'
 
-import { Transaction, TransactionStatus } from './transaction.entity'
+import { Transaction } from './transaction.entity'
 import { CreateTransactionDto } from './dto/create-transaction.dto'
 import { UpdateTransactionDto } from './dto/update-transaction.dto'
 import { FundsService } from '../funds/funds.service'
 import { TRANSACTION_PARSE_JOB, TRANSACTION_PARSE_QUEUE } from '../jobs/job.constants'
+import { TransactionStatus } from './enums/transaction-status.enum'
 
 @Injectable()
 export class TransactionsService {
@@ -38,8 +39,8 @@ export class TransactionsService {
     await this.fundsService.assertMembership(fundId, userId)
 
     const status: TransactionStatus = dto.spendValue !== undefined || dto.earnValue !== undefined
-      ? 'processed'
-      : 'pending'
+      ? TransactionStatus.PROCESSED
+      : TransactionStatus.PENDING
 
     const transaction = this.transactionRepository.create({
       fundId,
@@ -111,7 +112,7 @@ export class TransactionsService {
     const metadataValue = (payload.metadata ?? null) as QueryDeepPartialEntity<Transaction['metadata']>
 
     const updatePayload: QueryDeepPartialEntity<Transaction> = {
-      status: 'processed',
+      status: TransactionStatus.PROCESSED,
       spendValue: payload.spendValue,
       earnValue: payload.earnValue,
       content: payload.content,
@@ -128,7 +129,7 @@ export class TransactionsService {
     await this.transactionRepository.update(
       { id: transactionId },
       {
-        status: 'failed',
+        status: TransactionStatus.FAILED,
         failureReason: reason,
         processedAt: new Date(),
       },
