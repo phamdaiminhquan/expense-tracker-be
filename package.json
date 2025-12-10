@@ -34,9 +34,9 @@
     "helmet": "^7.2.0",
     "ioredis": "^5.4.2",
     "mysql2": "^3.11.3",
-    "pg": "^8.13.1",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
+    "pg": "^8.13.1",
     "pino": "^9.3.2",
     "pino-pretty": "^11.2.1",
     "reflect-metadata": "^0.2.2",
@@ -45,7 +45,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
-    "@nestjs/cli": "^11.0.0",
+    "@nestjs/cli": "^11.0.14",
     "@nestjs/schematics": "^11.0.0",
     "@nestjs/testing": "^11.0.0",
     "@types/bcryptjs": "^2.4.3",
