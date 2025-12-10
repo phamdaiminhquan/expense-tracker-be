@@ -38,28 +38,20 @@ export class TransactionsService {
   async create(userId: string, userName: string, fundId: string, dto: CreateTransactionDto) {
     await this.fundsService.assertMembership(fundId, userId)
 
-    const status: TransactionStatus = dto.spendValue !== undefined || dto.earnValue !== undefined
-      ? TransactionStatus.PROCESSED
-      : TransactionStatus.PENDING
-
     const transaction = this.transactionRepository.create({
       fundId,
       userId,
       userName,
       rawPrompt: dto.rawPrompt,
-      status,
+      status: TransactionStatus.PROCESSED,
       spendValue: dto.spendValue ?? null,
       earnValue: dto.earnValue ?? null,
       content: dto.content ?? null,
       categoryId: dto.categoryId ?? null,
-      processedAt: status === 'processed' ? new Date() : null,
+      processedAt: new Date(),
     })
 
     const saved = await this.transactionRepository.save(transaction)
-
-    if (status === 'pending') {
-      await this.enqueueForParsing(saved)
-    }
 
     return saved
   }
