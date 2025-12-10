@@ -5,15 +5,18 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
 import helmet from 'helmet'
 
 import { AppModule } from './app.module'
+import { NestExpressApplication } from '@nestjs/platform-express'
 
-let cachedApp: INestApplication | null = null
+async function bootstrap(): Promise<INestApplication> {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const logger = new Logger('Bootstrap');
 
-async function createApp(): Promise<INestApplication> {
-  if (cachedApp) return cachedApp
-
-  const app = await NestFactory.create(AppModule, {
-    bufferLogs: true,
+  // Tạm thời mở CORS thoáng (origin: true)
+  app.enableCors({
+    origin: true,
+    credentials: true,
   })
+  logger.log(`CORS configured: ${JSON.stringify({ NODE_ENV: process.env.NODE_ENV})}`);
 
   const configService = app.get(ConfigService)
   const env = configService.get<string>('app.env', 'development')
@@ -29,12 +32,6 @@ async function createApp(): Promise<INestApplication> {
 
   app.use(helmet())
 
-  // Tạm thời mở CORS thoáng (origin: true)
-  app.enableCors({
-    origin: true,
-    credentials: true,
-  })
-
   if (env !== 'production') {
     const swaggerConfig = new DocumentBuilder()
       .setTitle('Expense Tracker API')
@@ -49,12 +46,11 @@ async function createApp(): Promise<INestApplication> {
 
   app.enableShutdownHooks()
 
-  cachedApp = app
   return app
 }
 
 if (require.main === module) {
-  createApp()
+  bootstrap()
     .then(async (app) => {
       const configService = app.get(ConfigService)
       const bootstrapLogger = new Logger('Bootstrap')
@@ -71,7 +67,7 @@ if (require.main === module) {
 }
 
 export default async function handler(req: any, res: any) {
-  const app = await createApp()
+  const app = await bootstrap()
   const instance = app.getHttpAdapter().getInstance()
   return instance(req, res)
 }
