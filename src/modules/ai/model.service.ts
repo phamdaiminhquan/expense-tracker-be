@@ -26,9 +26,11 @@ export class ModelService {
     const categories = await this.categoryRepository.find({ where: { fundId: input.fundId } })
     const requestBody = this.buildRequestBody(input.prompt, categories)
 
-    const model = this.configService.get<string>('ai.model') ?? 'gemini-2.0-flash'
+    const model = this.configService.get<string>('ai.model')
     const urlBase = this.configService.get<string>('ai.apiUrl')
     const apiKey = this.configService.get<string>('ai.geminiApiKey')
+    const version = this.configService.get<string>('ai.geminiApiVersion')
+    const method = this.configService.get<string>('ai.geminiMethod') ?? 'generateContent'
     const timeout = this.configService.get<number>('ai.requestTimeoutMs', 10000)
 
     if (!urlBase || !apiKey) {
@@ -36,7 +38,8 @@ export class ModelService {
       throw new ServiceUnavailableException('AI provider is not configured')
     }
 
-    const url = `${urlBase}/models/${model}:generateContent`
+    const apiVersion = version ?? 'v1'
+    const url = `${urlBase}/${apiVersion}/models/${model}:${method}`
     const logEntry = this.logRepository.create({
       model,
       prompt: requestBody,

@@ -24,7 +24,9 @@ export default () => ({
   ai: {
     geminiApiKey: process.env.GEMINI_API_KEY ?? '',
     model: process.env.GEMINI_MODEL ?? 'gemini-2.0-flash',
-    apiUrl: process.env.GEMINI_API_URL ?? 'https://generativelanguage.googleapis.com/v1beta/models',
+    apiUrl: process.env.GEMINI_API_URL ?? 'https://generativelanguage.googleapis.com',
+    geminiApiVersion: process.env.GEMINI_API_VERSION ?? 'v1beta',
+    geminiMethod: process.env.GEMINI_METHOD ?? 'generateContent',
     requestTimeoutMs: Number(process.env.GEMINI_TIMEOUT_MS ?? 10000),
   },
 })
