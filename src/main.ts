@@ -1,19 +1,21 @@
-import { Logger, ValidationPipe } from '@nestjs/common'
-import { NestFactory } from '@nestjs/core'
+import { INestApplication, Logger, ValidationPipe } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
+import { NestFactory } from '@nestjs/core'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
 import helmet from 'helmet'
 
 import { AppModule } from './app.module'
 
-async function bootstrap() {
+let cachedApp: INestApplication | null = null
+
+async function createApp(): Promise<INestApplication> {
+  if (cachedApp) return cachedApp
+
   const app = await NestFactory.create(AppModule, {
     bufferLogs: true,
   })
 
   const configService = app.get(ConfigService)
-  const bootstrapLogger = new Logger('Bootstrap')
-  const port = configService.get<number>('app.port', 3000)
   const env = configService.get<string>('app.env', 'development')
   const corsOrigins = configService.get<string[]>('app.corsOrigins', [])
 
@@ -47,12 +49,29 @@ async function bootstrap() {
 
   app.enableShutdownHooks()
 
-  await app.listen(port)
-  bootstrapLogger.log(`🚀 Backend listening on http://localhost:${port}`)
+  cachedApp = app
+  return app
 }
 
-bootstrap().catch((error) => {
-  // eslint-disable-next-line no-console
-  console.error('Failed to bootstrap NestJS application', error)
-  process.exit(1)
-})
+if (require.main === module) {
+  createApp()
+    .then(async (app) => {
+      const configService = app.get(ConfigService)
+      const bootstrapLogger = new Logger('Bootstrap')
+      const port = configService.get<number>('app.port', 3000)
+
+      await app.listen(port, '0.0.0.0')
+      bootstrapLogger.log(`🚀 Backend listening on http://localhost:${port}`)
+    })
+    .catch((error) => {
+      // eslint-disable-next-line no-console
+      console.error('Failed to bootstrap NestJS application', error)
+      process.exit(1)
+    })
+}
+
+export default async function handler(req: any, res: any) {
+  const app = await createApp()
+  const instance = app.getHttpAdapter().getInstance()
+  return instance(req, res)
+}
