@@ -17,7 +17,6 @@ async function createApp(): Promise<INestApplication> {
 
   const configService = app.get(ConfigService)
   const env = configService.get<string>('app.env', 'development')
-  const corsOrigins = configService.get<string[]>('app.corsOrigins', [])
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -30,8 +29,9 @@ async function createApp(): Promise<INestApplication> {
 
   app.use(helmet())
 
+  // Tạm thời mở CORS thoáng (origin: true)
   app.enableCors({
-    origin: corsOrigins.length > 0 ? corsOrigins : true,
+    origin: true,
     credentials: true,
   })
 
