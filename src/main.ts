@@ -31,6 +31,9 @@ async function createApp(): Promise<NestExpressApplication> {
 
   app.use(helmet())
 
+  // Quan trọng: init app khi không gọi listen (serverless)
+  await app.init()
+
   cachedApp = app
   return app
 }
