@@ -1,27 +1,25 @@
-import { INestApplication, Logger, ValidationPipe } from '@nestjs/common'
-import { ConfigService } from '@nestjs/config'
+import { Logger, ValidationPipe } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
 import helmet from 'helmet'
 
 import { AppModule } from './app.module'
 import { NestExpressApplication } from '@nestjs/platform-express'
 
-async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
-  const logger = new Logger('Bootstrap');
+let cachedApp: NestExpressApplication | null = null
+
+async function createApp(): Promise<NestExpressApplication> {
+  if (cachedApp) return cachedApp
+
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    bufferLogs: true,
+  })
 
   // Tạm thời mở CORS thoáng (origin: true)
   app.enableCors({
     origin: true,
     credentials: true,
   })
-  logger.log(`CORS configured: ${JSON.stringify({ NODE_ENV: process.env.NODE_ENV})}`);
 
-  // const configService = app.get(ConfigService)
-  // const env = configService.get<string>('app.env', 'development')
-
-  // Enable validation globally
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -29,54 +27,31 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
       transformOptions: { enableImplicitConversion: true },
     }),
-  );
+  )
 
   app.use(helmet())
 
-  // if (env !== 'production') {
-  //   const swaggerConfig = new DocumentBuilder()
-  //     .setTitle('Expense Tracker API')
-  //     .setDescription('API documentation for Expense Tracker backend')
-  //     .setVersion('0.1.0')
-  //     .addBearerAuth()
-  //     .build()
-
-  //   const document = SwaggerModule.createDocument(app, swaggerConfig)
-  //   SwaggerModule.setup('docs', app, document)
-  // }
-
-  // app.enableShutdownHooks()
-
-    const port = Number(process.env.PORT) || 3000;
-  await app.listen(port, '0.0.0.0');
-
-  logger.log(`Server running on port ${port}`);
-  logger.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-  logger.log(`Auth disabled: ${process.env.AUTH_DISABLED || 'false'}`);
-  logger.log(`Documentation: http://localhost:${port}/docs`);
+  cachedApp = app
+  return app
 }
-bootstrap();
 
+if (require.main === module) {
+  createApp()
+    .then(async (app) => {
+      const logger = new Logger('Bootstrap')
+      const port = Number(process.env.PORT) || 3000
+      await app.listen(port, '0.0.0.0')
+      logger.log(`🚀 Backend listening on http://localhost:${port}`)
+    })
+    .catch((error) => {
+      // eslint-disable-next-line no-console
+      console.error('Failed to bootstrap NestJS application', error)
+      process.exit(1)
+    })
+}
 
-// if (require.main === module) {
-//   bootstrap()
-//     .then(async (app) => {
-//       const configService = app.get(ConfigService)
-//       const bootstrapLogger = new Logger('Bootstrap')
-//       const port = configService.get<number>('app.port', 3000)
-
-//       await app.listen(port, '0.0.0.0')
-//       bootstrapLogger.log(`🚀 Backend listening on http://localhost:${port}`)
-//     })
-//     .catch((error) => {
-//       // eslint-disable-next-line no-console
-//       console.error('Failed to bootstrap NestJS application', error)
-//       process.exit(1)
-//     })
-// }
-
-// export default async function handler(req: any, res: any) {
-//   const app = await bootstrap()
-//   const instance = app.getHttpAdapter().getInstance()
-//   return instance(req, res)
-// }
+export default async function handler(req: any, res: any) {
+  const app = await createApp()
+  const instance = app.getHttpAdapter().getInstance()
+  return instance(req, res)
+}
