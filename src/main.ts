@@ -1,9 +1,10 @@
 import { Logger, ValidationPipe } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
 import helmet from 'helmet'
+import { NestExpressApplication } from '@nestjs/platform-express'
 
 import { AppModule } from './app.module'
-import { NestExpressApplication } from '@nestjs/platform-express'
+import { setupSwagger } from './config/swagger.config'
 
 let cachedApp: NestExpressApplication | null = null
 
@@ -30,6 +31,9 @@ async function createApp(): Promise<NestExpressApplication> {
   )
 
   app.use(helmet())
+
+  // Setup Swagger documentation (disabled in production)
+  setupSwagger(app)
 
   // Quan trọng: init app khi không gọi listen (serverless)
   await app.init()
