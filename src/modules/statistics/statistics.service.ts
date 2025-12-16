@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 
-import { Transaction } from '../transactions/transaction.entity'
+import { Message } from '../messages/message.entity'
 import { FundsService } from '../funds/funds.service'
 
 export interface StatisticsQuery {
@@ -13,30 +13,30 @@ export interface StatisticsQuery {
 @Injectable()
 export class StatisticsService {
   constructor(
-    @InjectRepository(Transaction)
-    private readonly transactionRepository: Repository<Transaction>,
+    @InjectRepository(Message)
+    private readonly messageRepository: Repository<Message>,
     private readonly fundsService: FundsService,
   ) {}
 
   async fundSummary(fundId: string, userId: string, query: StatisticsQuery) {
     await this.fundsService.assertMembership(fundId, userId)
 
-    const builder = this.transactionRepository
-      .createQueryBuilder('transaction')
-      .where('transaction.fundId = :fundId', { fundId })
-      .andWhere('transaction.status = :status', { status: 'processed' })
+    const builder = this.messageRepository
+      .createQueryBuilder('message')
+      .where('message.fundId = :fundId', { fundId })
+      .andWhere('message.status = :status', { status: 'processed' })
 
     if (query.from) {
-      builder.andWhere('transaction.createdAt >= :from', { from: query.from })
+      builder.andWhere('message.createdAt >= :from', { from: query.from })
     }
 
     if (query.to) {
-      builder.andWhere('transaction.createdAt <= :to', { to: query.to })
+      builder.andWhere('message.createdAt <= :to', { to: query.to })
     }
 
     const [totalSpend, totalEarn] = await Promise.all([
-      builder.clone().select('COALESCE(SUM(transaction.spendValue), 0)', 'total').getRawOne<{ total: string }>(),
-      builder.clone().select('COALESCE(SUM(transaction.earnValue), 0)', 'total').getRawOne<{ total: string }>(),
+      builder.clone().select('COALESCE(SUM(message.spendValue), 0)', 'total').getRawOne<{ total: string }>(),
+      builder.clone().select('COALESCE(SUM(message.earnValue), 0)', 'total').getRawOne<{ total: string }>(),
     ])
 
     return {

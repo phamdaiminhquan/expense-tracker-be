@@ -2,41 +2,41 @@ import { Injectable, Logger } from '@nestjs/common'
 import { Processor, WorkerHost } from '@nestjs/bullmq'
 import { Job } from 'bullmq'
 
-import { TRANSACTION_PARSE_JOB, TRANSACTION_PARSE_QUEUE } from './job.constants'
-import { TransactionsService } from '../transactions/transactions.service'
+import { MESSAGE_PARSE_JOB, MESSAGE_PARSE_QUEUE } from './job.constants'
+import { MessagesService } from '../messages/messages.service'
 import { ModelService } from '../ai/model.service'
 
-interface TransactionParseJobData {
-  transactionId: string
+interface MessageParseJobData {
+  messageId: string
   fundId: string
   userId: string
   prompt: string
 }
 
 @Injectable()
-@Processor(TRANSACTION_PARSE_QUEUE)
-export class TransactionParseProcessor extends WorkerHost {
-  private readonly logger = new Logger(TransactionParseProcessor.name)
+@Processor(MESSAGE_PARSE_QUEUE)
+export class MessageParseProcessor extends WorkerHost {
+  private readonly logger = new Logger(MessageParseProcessor.name)
 
   constructor(
-    private readonly transactionsService: TransactionsService,
+    private readonly messagesService: MessagesService,
     private readonly modelService: ModelService,
   ) {
     super()
   }
 
-  async process(job: Job<TransactionParseJobData, unknown, typeof TRANSACTION_PARSE_JOB>): Promise<void> {
-    const { transactionId, fundId, prompt } = job.data
+  async process(job: Job<MessageParseJobData, unknown, typeof MESSAGE_PARSE_JOB>): Promise<void> {
+    const { messageId, fundId, prompt } = job.data
 
-    this.logger.debug(`Processing transaction ${transactionId}`)
+    this.logger.debug(`Processing message ${messageId}`)
 
     try {
       const result = await this.modelService.parseExpense({ fundId, prompt })
-      await this.transactionsService.markProcessed(transactionId, result)
+      await this.messagesService.markProcessed(messageId, result)
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error'
-      await this.transactionsService.markFailed(transactionId, message)
-      this.logger.error(`Failed to process transaction ${transactionId}: ${message}`)
+      await this.messagesService.markFailed(messageId, message)
+      this.logger.error(`Failed to process message ${messageId}: ${message}`)
       throw error
     }
   }

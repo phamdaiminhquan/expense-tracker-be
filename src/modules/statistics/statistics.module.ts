@@ -3,11 +3,11 @@ import { TypeOrmModule } from '@nestjs/typeorm'
 
 import { StatisticsService } from './statistics.service'
 import { StatisticsController } from './statistics.controller'
-import { Transaction } from '../transactions/transaction.entity'
+import { Message } from '../messages/message.entity'
 import { FundsModule } from '../funds/funds.module'
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Transaction]), forwardRef(() => FundsModule)],
+  imports: [TypeOrmModule.forFeature([Message]), forwardRef(() => FundsModule)],
   providers: [StatisticsService],
   controllers: [StatisticsController],
 })

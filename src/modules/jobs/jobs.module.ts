@@ -1,20 +1,20 @@
 import { Module, forwardRef } from '@nestjs/common'
 import { BullModule } from '@nestjs/bullmq'
 
-import { TRANSACTION_PARSE_QUEUE } from './job.constants'
-import { TransactionParseProcessor } from './transaction-parse.processor'
-import { TransactionsModule } from '../transactions/transactions.module'
+import { MESSAGE_PARSE_QUEUE, MESSAGE_PARSE_JOB } from './job.constants'
+import { MessageParseProcessor } from './transaction-parse.processor'
+import { MessagesModule } from '../messages/messages.module'
 import { AiModule } from '../ai/ai.module'
 
 @Module({
   imports: [
     BullModule.registerQueue({
-      name: TRANSACTION_PARSE_QUEUE,
+      name: MESSAGE_PARSE_QUEUE,
     }),
-    forwardRef(() => TransactionsModule),
+    forwardRef(() => MessagesModule),
     AiModule,
   ],
-  providers: [TransactionParseProcessor],
+  providers: [MessageParseProcessor],
   exports: [BullModule],
 })
 export class JobsModule {}

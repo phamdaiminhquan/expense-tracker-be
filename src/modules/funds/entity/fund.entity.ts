@@ -1,7 +1,7 @@
 import { Column, Entity, OneToMany } from 'typeorm'
 
 import { FundMember } from './fund-member.entity'
-import { Transaction } from '../../transactions/transaction.entity'
+import { Message } from '../../messages/message.entity'
 import { BaseEntity } from '../../../common/base.entity'
 import { FundType } from '../enums/fund-type.enum'
 
@@ -20,7 +20,7 @@ export class Fund extends BaseEntity {
   @OneToMany(() => FundMember, (member) => member.fund)
   memberships!: FundMember[]
 
-  @OneToMany(() => Transaction, (transaction) => transaction.fund)
-  transactions!: Transaction[]
+  @OneToMany(() => Message, (message) => message.fund)
+  messages!: Message[]
 
 }

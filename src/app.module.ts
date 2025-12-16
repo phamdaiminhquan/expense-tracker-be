@@ -11,7 +11,7 @@ import { UsersModule } from './modules/users/users.module'
 import { AuthModule } from './modules/auth/auth.module'
 import { FundsModule } from './modules/funds/funds.module'
 import { CategoriesModule } from './modules/categories/categories.module'
-import { TransactionsModule } from './modules/transactions/transactions.module'
+import { MessagesModule } from './modules/messages/messages.module'
 import { AiModule } from './modules/ai/ai.module'
 import { JobsModule } from './modules/jobs/jobs.module'
 import { StatisticsModule } from './modules/statistics/statistics.module'
@@ -55,7 +55,7 @@ import { StatisticsModule } from './modules/statistics/statistics.module'
     AuthModule,
     FundsModule,
     CategoriesModule,
-    TransactionsModule,
+    MessagesModule,
     AiModule,
     JobsModule,
     StatisticsModule,
