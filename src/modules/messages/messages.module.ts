@@ -8,6 +8,7 @@ import { MessagesController } from './messages.controller'
 import { FundsModule } from '../funds/funds.module'
 import { UsersModule } from '../users/users.module'
 import { MESSAGE_PARSE_QUEUE } from '../jobs/job.constants'
+import { AiModule } from '../ai/ai.module'
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { MESSAGE_PARSE_QUEUE } from '../jobs/job.constants'
     BullModule.registerQueue({ name: MESSAGE_PARSE_QUEUE }),
     forwardRef(() => FundsModule),
     UsersModule,
+    AiModule,
   ],
   providers: [MessagesService],
   controllers: [MessagesController],

@@ -11,13 +11,17 @@ import { FundsService } from '../funds/funds.service'
 import { MESSAGE_PARSE_JOB, MESSAGE_PARSE_QUEUE } from '../jobs/job.constants'
 import { messageStatus } from './enums/message-status.enum'
 import { User } from '../users/user.entity'
+import { ModelService } from '../ai/model.service'
 
 @Injectable()
 export class MessagesService {
   constructor(
     @InjectRepository(Message)
     private readonly messageRepository: Repository<Message>,
+
+    private readonly modelService: ModelService,
     private readonly fundsService: FundsService,
+    
     @InjectQueue(MESSAGE_PARSE_QUEUE)
     private readonly parseQueue: Queue,
   ) {}
@@ -37,17 +41,28 @@ export class MessagesService {
   }
 
   async create(user: User, fundId: string, dto: CreatemessageDto) {
+    // check user is member of fund
     await this.fundsService.assertMembership(fundId, user.id)
+
+    // call AI service
+    const aiPayload = await this.modelService.parseExpense({ fundId, prompt: dto.message })
+    
+    // create message
     const message = this.messageRepository.create({
       fundId: fundId,
-      message: dto.message,
-      status: messageStatus.PENDING,
+      message: dto.message ?? undefined,
+      status: messageStatus.PROCESSED,
       createdById: user.id,
+      spendValue: aiPayload.spendValue ?? undefined,
+      earnValue: aiPayload.earnValue ?? undefined,
+      categoryId: aiPayload.categoryId ?? undefined,
+      metadata: aiPayload.metadata ?? undefined,
     })
-
+  
+    // save message
     const saved = await this.messageRepository.save(message)
 
-    await this.enqueueForParsing(saved)
+    // await this.enqueueForParsing(saved)
 
     return saved
   }
@@ -73,7 +88,7 @@ export class MessagesService {
       earnValue: number | null
       content: string
       categoryId?: string | null
-      metadata?: Message['metadata']
+      metadata?: Message['metadata'] | null
     },
   ) {
     const metadataValue = (payload.metadata ?? null) as QueryDeepPartialEntity<Message['metadata']>
