@@ -1,6 +1,7 @@
-import { IsArray, IsEnum, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator'
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
+import { IsArray, IsEnum, IsString, IsUUID, MaxLength, MinLength } from 'class-validator'
+import { ApiProperty } from '@nestjs/swagger'
 
+import { ApiPropertyOptionalCustom } from '../../../common/swagger/api-property-optional-custom.decorator'
 import { FundType } from '../enums/fund-type.enum'
 
 export class CreateFundDto {
@@ -14,9 +15,8 @@ export class CreateFundDto {
   @IsEnum(FundType)
   type!: FundType
 
-  @ApiPropertyOptional({ type: 'string', format: 'uuid', isArray: true })
+  @ApiPropertyOptionalCustom({ type: 'string', format: 'uuid', isArray: true })
   @IsArray()
   @IsUUID('all', { each: true })
-  @IsOptional()
   memberIds?: string[]
 }

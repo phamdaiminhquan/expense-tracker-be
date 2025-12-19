@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common'
 import { ConfigModule, ConfigService } from '@nestjs/config'
 import { TypeOrmModule } from '@nestjs/typeorm'
-import { BullModule } from '@nestjs/bullmq'
 
 import configuration from './config/configuration'
 import { validateEnv } from './config/env.validation'
@@ -12,8 +11,8 @@ import { AuthModule } from './modules/auth/auth.module'
 import { FundsModule } from './modules/funds/funds.module'
 import { CategoriesModule } from './modules/categories/categories.module'
 import { MessagesModule } from './modules/messages/messages.module'
+import { TransactionsModule } from './modules/transactions/transactions.module'
 import { AiModule } from './modules/ai/ai.module'
-import { JobsModule } from './modules/jobs/jobs.module'
 import { StatisticsModule } from './modules/statistics/statistics.module'
 
 @Module({
@@ -39,25 +38,13 @@ import { StatisticsModule } from './modules/statistics/statistics.module'
         },
       }),
     }),
-    BullModule.forRootAsync({
-      inject: [ConfigService],
-      useFactory: async (configService: ConfigService) => ({
-        connection: {
-          url: configService.getOrThrow<string>('redis.url'),
-        },
-        defaultJobOptions: {
-          removeOnComplete: true,
-          removeOnFail: 100,
-        },
-      }),
-    }),
     UsersModule,
     AuthModule,
     FundsModule,
     CategoriesModule,
     MessagesModule,
+    TransactionsModule,
     AiModule,
-    JobsModule,
     StatisticsModule,
   ],
 })

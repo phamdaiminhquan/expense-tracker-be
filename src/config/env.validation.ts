@@ -19,10 +19,6 @@ class EnvironmentVariables {
   @IsString()
   @IsOptional()
   DATABASE_URL?: string
-
-  @IsString()
-  @IsOptional()
-  REDIS_URL?: string
 }
 
 export function validateEnv(config: Record<string, unknown>) {

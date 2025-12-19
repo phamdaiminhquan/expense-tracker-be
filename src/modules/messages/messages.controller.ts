@@ -51,7 +51,7 @@ export class MessagesController {
     description: 'Create a new message/transaction. The message will be processed by AI to extract spend/earn values and category.',
   })
   @ApiParam({ name: 'fundId', type: 'string', format: 'uuid', description: 'Fund ID' })
-  @ApiResponse({ status: 201, description: 'Message created successfully. AI processing will be queued.', type: Message })
+  @ApiResponse({ status: 201, description: 'Message created successfully. AI processing completed synchronously.', type: Message })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Not a member of this fund' })
   async create(

@@ -1,4 +1,4 @@
-import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common'
+import { Inject, Injectable, Logger, ServiceUnavailableException, forwardRef } from '@nestjs/common'
 import { HttpService } from '@nestjs/axios'
 import { ConfigService } from '@nestjs/config'
 import { InjectRepository } from '@nestjs/typeorm'
@@ -6,8 +6,9 @@ import { Repository } from 'typeorm'
 import { firstValueFrom } from 'rxjs'
 
 import { AiRequestLog } from './ai-request-log.entity'
-import { Category } from '../categories/category.entity'
 import { ParsedExpensePayload } from './interfaces/parsed-expense.interface'
+import { CategoriesService } from '../categories/categories.service'
+import { Category } from '../categories/category.entity'
 
 @Injectable()
 export class ModelService {
@@ -18,12 +19,13 @@ export class ModelService {
     private readonly configService: ConfigService,
     @InjectRepository(AiRequestLog)
     private readonly logRepository: Repository<AiRequestLog>,
-    @InjectRepository(Category)
-    private readonly categoryRepository: Repository<Category>,
+    @Inject(forwardRef(() => CategoriesService))
+    private readonly categoriesService: CategoriesService,
   ) {}
 
   async parseExpense(input: { fundId: string; prompt: string }): Promise<ParsedExpensePayload> {
-    const categories = await this.categoryRepository.find({ where: { fundId: input.fundId } })
+    // Get active categories for the fund (without membership check, as it's already verified in MessagesService)
+    const categories = await this.categoriesService.getActiveCategoriesForFund(input.fundId)
     const requestBody = this.buildRequestBody(input.prompt, categories)
 
     const model = this.configService.get<string>('ai.model')

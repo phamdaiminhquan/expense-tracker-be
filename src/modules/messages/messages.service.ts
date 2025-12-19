@@ -1,17 +1,15 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { QueryDeepPartialEntity, Repository } from 'typeorm'
-import { InjectQueue } from '@nestjs/bullmq'
-import { Queue } from 'bullmq'
 
 import { Message } from './message.entity'
 import { CreatemessageDto } from './dto/create-message.dto'
 import { UpdatemessageDto } from './dto/update-message.dto'
 import { FundsService } from '../funds/funds.service'
-import { MESSAGE_PARSE_JOB, MESSAGE_PARSE_QUEUE } from '../jobs/job.constants'
 import { messageStatus } from './enums/message-status.enum'
 import { User } from '../users/user.entity'
 import { ModelService } from '../ai/model.service'
+import { TransactionsService } from '../transactions/transactions.service'
 
 @Injectable()
 export class MessagesService {
@@ -21,9 +19,7 @@ export class MessagesService {
 
     private readonly modelService: ModelService,
     private readonly fundsService: FundsService,
-    
-    @InjectQueue(MESSAGE_PARSE_QUEUE)
-    private readonly parseQueue: Queue,
+    private readonly transactionsService: TransactionsService,
   ) {}
 
   async listByFund(fundId: string, userId: string) {
@@ -50,25 +46,38 @@ export class MessagesService {
     // create message
     const message = this.messageRepository.create({
       fundId: fundId,
-      message: dto.message ?? undefined,
+      message: dto.message ?? null,
       status: messageStatus.PROCESSED,
       createdById: user.id,
-      spendValue: aiPayload.spendValue ?? undefined,
-      earnValue: aiPayload.earnValue ?? undefined,
-      categoryId: aiPayload.categoryId ?? undefined,
-      metadata: aiPayload.metadata ?? undefined,
+      metadata: aiPayload.metadata ?? null,
     })
   
-    // save message
-    const saved = await this.messageRepository.save(message)
+    // save message first
+    const savedMessage = await this.messageRepository.save(message)
 
-    // await this.enqueueForParsing(saved)
+    // If AI extracted transaction data, create a transaction
+    if (aiPayload.spendValue !== null || aiPayload.earnValue !== null || aiPayload.content) {
+      const transaction = await this.transactionsService.create({
+        fundId,
+        createdById: user.id,
+        categoryId: aiPayload.categoryId ?? null,
+        spendValue: aiPayload.spendValue ?? null,
+        earnValue: aiPayload.earnValue ?? null,
+        content: aiPayload.content ?? null,
+        metadata: aiPayload.metadata ?? null,
+      })
 
-    return saved
+      // Link transaction to message
+      savedMessage.transactionId = transaction.id
+      await this.messageRepository.save(savedMessage)
+    }
+
+    return savedMessage
   }
 
   async update(messageId: string, userId: string, dto: UpdatemessageDto) {
     const message = await this.findByIdForUser(messageId, userId)
+    Object.assign(message, dto)
     return this.messageRepository.save(message)
   }
 
@@ -91,16 +100,38 @@ export class MessagesService {
       metadata?: Message['metadata'] | null
     },
   ) {
+    // Note: This method is kept for potential async processing in the future
+    // Currently, transactions are created synchronously in create() method
+    // If needed, this can create a transaction and link it to the message
+    
     const metadataValue = (payload.metadata ?? null) as QueryDeepPartialEntity<Message['metadata']>
 
     const updatePayload: QueryDeepPartialEntity<Message> = {
       status: messageStatus.PROCESSED,
-      content: payload.content,
       metadata: metadataValue,
       processedAt: new Date(),
     }
 
     await this.messageRepository.update({ id: messageId }, updatePayload)
+
+    // If transaction data exists, create a transaction
+    if (payload.spendValue !== null || payload.earnValue !== null || payload.content) {
+      const message = await this.messageRepository.findOne({ where: { id: messageId } })
+      if (message) {
+        const transaction = await this.transactionsService.create({
+          fundId: message.fundId,
+          createdById: message.createdById || '',
+          categoryId: payload.categoryId ?? null,
+          spendValue: payload.spendValue ?? null,
+          earnValue: payload.earnValue ?? null,
+          content: payload.content ?? null,
+          metadata: payload.metadata ?? null,
+        })
+
+        message.transactionId = transaction.id
+        await this.messageRepository.save(message)
+      }
+    }
   }
 
   async markFailed(messageId: string, reason: string) {
@@ -110,23 +141,6 @@ export class MessagesService {
         status: messageStatus.FAILED,
         failureReason: reason,
         processedAt: new Date(),
-      },
-    )
-  }
-
-  private async enqueueForParsing(message: Message) {
-    await this.parseQueue.add(
-      MESSAGE_PARSE_JOB,
-      {
-        messageId: message.id,
-        fundId: message.fundId,
-      },
-      {
-        attempts: 3,
-        backoff: {
-          type: 'exponential',
-          delay: 5000,
-        },
       },
     )
   }

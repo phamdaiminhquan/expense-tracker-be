@@ -12,9 +12,6 @@ export default () => ({
     url: process.env.DATABASE_URL ?? '',
     logging: process.env.DATABASE_LOGGING === 'true',
   },
-  redis: {
-    url: process.env.REDIS_URL ?? '',
-  },
   auth: {
     accessSecret: process.env.JWT_ACCESS_SECRET ?? 'change-me',
     accessExpiresIn: process.env.JWT_ACCESS_EXPIRES_IN ?? '900s',

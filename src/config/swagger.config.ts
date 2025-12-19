@@ -55,10 +55,9 @@ Gửi access token trong header Authorization theo dạng: \`Bearer <token>\`
 }
 
 /**
- * Enterprise-grade Swagger setup that exposes only OpenAPI JSON specification
- * - No Swagger UI (lighter weight, better for production-like environments)
- * - Compatible with Vercel serverless deployment
- * - Can be imported into Postman, Insomnia, or other API tools
+ * Swagger setup with UI and JSON endpoint
+ * - Swagger UI available at /api/docs for interactive API testing
+ * - JSON endpoint at /api/docs-json for Postman/Insomnia import
  * - Disabled in production environment
  */
 export function setupSwagger(app: NestExpressApplication): void {
@@ -73,14 +72,21 @@ export function setupSwagger(app: NestExpressApplication): void {
   const config = createOpenApiConfig()
   const document = SwaggerModule.createDocument(app, config)
 
-  // Expose only the JSON endpoint without Swagger UI
-  // This is the enterprise-grade approach - lighter and more flexible
+  // Setup Swagger UI
+  SwaggerModule.setup('api/docs', app, document, {
+    customSiteTitle: 'API Quản Lý Chi Tiêu',
+    customfavIcon: '/favicon.ico',
+    customCss: '.swagger-ui .topbar { display: none }',
+  })
+
+  // Also expose JSON endpoint for Postman/Insomnia import
   app.getHttpAdapter().get('/api/docs-json', (_req: any, res: any) => {
     res.setHeader('Content-Type', 'application/json')
     res.setHeader('Access-Control-Allow-Origin', '*')
     res.send(document)
   })
 
+  logger.log('Swagger UI available at /api/docs')
   logger.log('OpenAPI JSON specification available at /api/docs-json')
 }
 

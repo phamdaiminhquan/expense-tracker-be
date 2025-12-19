@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common'
+import { ForbiddenException, Inject, Injectable, NotFoundException, forwardRef } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { In, Repository } from 'typeorm'
 
@@ -7,6 +7,7 @@ import { FundMember } from './entity/fund-member.entity'
 import { CreateFundDto } from './dto/create-fund.dto'
 import { UpdateFundDto } from './dto/update-fund.dto'
 import { FundMemberRole } from './enums/fund-member-role.enum'
+import { CategoriesService } from '../categories/categories.service'
 
 @Injectable()
 export class FundsService {
@@ -15,6 +16,8 @@ export class FundsService {
     private readonly fundRepository: Repository<Fund>,
     @InjectRepository(FundMember)
     private readonly memberRepository: Repository<FundMember>,
+    @Inject(forwardRef(() => CategoriesService))
+    private readonly categoriesService: CategoriesService,
   ) {}
 
   async create(ownerId: string, dto: CreateFundDto): Promise<Fund> {
@@ -37,6 +40,9 @@ export class FundsService {
     )
 
     await this.memberRepository.save(members)
+
+    // Initialize default categories for the fund
+    await this.categoriesService.initializeDefaultCategoriesForFund(savedFund.id)
 
     return this.findByIdOrThrow(savedFund.id)
   }

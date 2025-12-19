@@ -61,7 +61,7 @@ export class CategoriesController {
   }
 
   @Delete(':categoryId')
-  @ApiOperation({ summary: 'Delete category', description: 'Delete a category' })
+  @ApiOperation({ summary: 'Delete category', description: 'Delete a category (deactivate for default, soft delete for custom)' })
   @ApiParam({ name: 'fundId', type: 'string', format: 'uuid', description: 'Fund ID' })
   @ApiParam({ name: 'categoryId', type: 'string', format: 'uuid', description: 'Category ID' })
   @ApiResponse({ status: 200, description: 'Category deleted successfully' })
@@ -70,8 +70,25 @@ export class CategoriesController {
   @ApiResponse({ status: 404, description: 'Category not found' })
   async remove(
     @CurrentUser() user: JwtPayload,
+    @Param('fundId') fundId: string,
     @Param('categoryId') categoryId: string,
   ) {
-    return this.categoriesService.remove(categoryId, user.sub)
+    return this.categoriesService.remove(categoryId, user.sub, fundId)
+  }
+
+  @Patch(':categoryId/toggle')
+  @ApiOperation({ summary: 'Toggle category in fund', description: 'Activate or deactivate a category in a fund (for default categories)' })
+  @ApiParam({ name: 'fundId', type: 'string', format: 'uuid', description: 'Fund ID' })
+  @ApiParam({ name: 'categoryId', type: 'string', format: 'uuid', description: 'Category ID' })
+  @ApiResponse({ status: 200, description: 'Category toggled successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Not a member of this fund' })
+  async toggle(
+    @CurrentUser() user: JwtPayload,
+    @Param('fundId') fundId: string,
+    @Param('categoryId') categoryId: string,
+    @Body() body: { isActive: boolean },
+  ) {
+    return this.categoriesService.toggleCategoryInFund(fundId, categoryId, user.sub, body.isActive)
   }
 }
