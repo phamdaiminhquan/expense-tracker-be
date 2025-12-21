@@ -265,26 +265,11 @@ export class FundsService {
       where.status = status
     }
 
-    const requests = await this.joinRequestRepository.find({
+    return this.joinRequestRepository.find({
       where,
       relations: ['user'],
       order: { createdAt: 'DESC' },
     })
-
-    // Map to DTO format
-    return requests.map((request) => ({
-      id: request.id,
-      fundId: request.fundId,
-      status: request.status,
-      user: {
-        id: request.user.id,
-        name: request.user.name,
-        email: request.user.email,
-      },
-      createdAt: request.createdAt,
-      reviewedAt: request.reviewedAt,
-      reviewedById: request.reviewedById,
-    }))
   }
 
   /**

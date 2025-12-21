@@ -87,11 +87,29 @@ export class ModelService {
   }
 
   private buildRequestBody(prompt: string, categories: Category[]) {
+    // Separate custom and default categories for better instruction
+    const customCategories = categories.filter(c => !c.isDefault)
+    const defaultCategories = categories.filter(c => c.isDefault)
+    
     const categoriesInfo =
       categories.length > 0
-        ? `\n\nAvailable categories:\n${categories
-            .map((c) => `- ID: \"${c.id}\", Name: \"${c.name}\", Description: \"${c.description ?? ''}\"`)
-            .join('\n')}\n\nIf the expense matches one of the categories above, include \"categoryId\" with the category's ID. If no category matches, set \"categoryId\" to null.`
+        ? `\n\nAvailable categories (listed in priority order):\n${
+            customCategories.length > 0
+              ? `\n[USER-DEFINED CATEGORIES - HIGHEST PRIORITY]\n${customCategories
+                  .map((c) => `- ID: "${c.id}", Name: "${c.name}", Description: "${c.description ?? ''}"`)
+                  .join('\n')}\n`
+              : ''
+          }${
+            defaultCategories.length > 0
+              ? `\n[SYSTEM DEFAULT CATEGORIES - LOWER PRIORITY]\n${defaultCategories
+                  .map((c) => `- ID: "${c.id}", Name: "${c.name}", Description: "${c.description ?? ''}"`)
+                  .join('\n')}\n`
+              : ''
+          }\n\nIMPORTANT PRIORITY RULES:
+- If multiple categories could match the expense, ALWAYS choose the USER-DEFINED category first
+- Only use a SYSTEM DEFAULT category if no user-defined category matches
+- If the expense matches one of the categories above, include "categoryId" with the category's ID
+- If no category matches, set "categoryId" to null`
         : '\n\nNo categories available, set "categoryId" to null.'
 
     const instruction = `Parse this Vietnamese/English expense entry into JSON format. Extract:
@@ -105,6 +123,7 @@ Rules:
 - Otherwise it's spending (set spendValue, earnValue=null)
 - Amount is in thousands (35 means 35,000 VND)
 - Match category based on description if available
+- ALWAYS prioritize user-defined categories over system default categories when both could match
 - Return ONLY valid JSON, no markdown formatting
 
 Now parse this: "${prompt}"

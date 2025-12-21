@@ -69,3 +69,77 @@ The script will:
 🔌 Database connection closed
 ```
 
+## reset-default-categories.ts
+
+This script resets all default categories in the database by deleting old ones and creating new ones from the definition.
+
+### What it does:
+- Deletes all FundCategory relationships for default categories
+- Deletes all existing default categories (parents and children)
+- Creates new default categories from DEFAULT_CATEGORIES definition
+
+### Prerequisites:
+- Database schema must be synchronized (tables must exist)
+- `DATABASE_URL` environment variable must be set
+- TypeORM entities must be accessible
+
+### Usage:
+
+```bash
+# Using npm script (recommended)
+npm run migrate:reset-categories
+
+# Or directly with ts-node
+npx ts-node -r tsconfig-paths/register scripts/reset-default-categories.ts
+
+# Or with tsx (if installed)
+npx tsx scripts/reset-default-categories.ts
+```
+
+### Environment Variables:
+- `DATABASE_URL`: PostgreSQL connection string (required)
+
+### Output:
+The script will:
+- Show progress for each category being created
+- Display a summary with deleted and created counts
+- Exit with code 0 on success, 1 on error
+
+### Safety:
+- ⚠️ **WARNING**: This script will DELETE all existing default categories and their FundCategory relationships
+- All funds will need to re-subscribe to categories after running this script
+- Custom categories (non-default) are NOT affected
+
+### Example Output:
+```
+🚀 Starting migration: Reset default categories...
+
+✅ Database connection established
+
+📊 Found 20 default categories in database
+
+🗑️  Deleted FundCategory relationships: 45 rows
+  ✅ Deleted 15 child categories
+  ✅ Deleted 5 parent categories
+
+📝 Creating new default categories...
+
+  ✅ Created parent: "Thực phẩm – Đồ uống"
+     └─ Created 3 children
+  ✅ Created parent: "Sinh hoạt – Tiện ích"
+     └─ Created 8 children
+  ...
+
+==================================================
+📈 Migration Summary:
+   🗑️  Deleted old categories: 20
+   ✅ Created parent categories: 10
+   ✅ Created child categories: 46
+   📊 Total new categories: 56
+==================================================
+
+✨ Migration completed successfully!
+💡 Note: Existing funds will need to subscribe to categories manually
+🔌 Database connection closed
+```
+

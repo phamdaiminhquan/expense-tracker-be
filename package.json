@@ -12,7 +12,8 @@
     "lint": "eslint \"src/**/*.ts\" --max-warnings=0",
     "test": "jest --passWithNoTests",
     "test:watch": "jest --watch",
-    "migrate:funds-numberid": "ts-node -r tsconfig-paths/register scripts/migrate-funds-numberid.ts"
+    "migrate:funds-numberid": "ts-node -r tsconfig-paths/register scripts/migrate-funds-numberid.ts",
+    "migrate:reset-categories": "ts-node -r tsconfig-paths/register scripts/reset-default-categories.ts"
   },
   "dependencies": {
     "@nestjs/axios": "^4.0.0",

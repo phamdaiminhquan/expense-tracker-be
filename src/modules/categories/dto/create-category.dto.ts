@@ -1,4 +1,4 @@
-import { IsString, IsUUID, MaxLength, MinLength } from 'class-validator'
+import { IsString, IsUUID, MaxLength, MinLength, IsOptional } from 'class-validator'
 import { ApiProperty } from '@nestjs/swagger'
 
 import { ApiPropertyOptionalCustom } from '../../../common/swagger/api-property-optional-custom.decorator'
@@ -17,9 +17,11 @@ export class CreateCategoryDto {
   @ApiPropertyOptionalCustom({ example: 'Groceries, eating out...' })
   @IsString()
   @MaxLength(255)
+  @IsOptional()
   description?: string
 
-  @ApiPropertyOptionalCustom({ format: 'uuid', description: 'Parent category ID (for hierarchical structure)' })
+  @ApiPropertyOptionalCustom({ format: 'uuid', description: 'Parent category ID (for hierarchical structure). If provided, creates a child category.' })
   @IsUUID()
+  @IsOptional()
   parentId?: string
 }

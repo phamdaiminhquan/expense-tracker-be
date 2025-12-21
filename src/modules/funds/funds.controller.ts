@@ -21,8 +21,6 @@ import { AddFundMemberDto } from './dto/add-member.dto'
 import { UpdateMemberRoleDto } from './dto/update-member-role.dto'
 import { MembershipStatusDto } from './dto/membership-status.dto'
 import { PublicFundInfoDto } from './dto/public-fund-info.dto'
-import { GetJoinRequestsQueryDto } from './dto/get-join-requests-query.dto'
-import { JoinRequestListItemDto } from './dto/join-request-list-item.dto'
 import { Fund } from './entity/fund.entity'
 import { FundMember } from './entity/fund-member.entity'
 import { FundJoinRequest, JoinRequestStatus } from './entity/fund-join-request.entity'
@@ -197,16 +195,16 @@ export class FundsController {
     description: 'Get all join requests for a fund. Only owners and admins can view. Optional status filter.' 
   })
   @ApiParam({ name: 'fundId', type: 'string', format: 'uuid', description: 'Fund ID' })
-  @ApiResponse({ status: 200, description: 'List of join requests', type: [JoinRequestListItemDto] })
+  @ApiResponse({ status: 200, description: 'List of join requests', type: [FundJoinRequest] })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Only owners and admins can view join requests' })
   @ApiResponse({ status: 404, description: 'Fund not found' })
   async getJoinRequests(
     @CurrentUser() user: JwtPayload,
     @Param('fundId') fundId: string,
-    @Query() query: GetJoinRequestsQueryDto,
+    @Query('status') status?: JoinRequestStatus,
   ) {
-    return this.fundsService.getJoinRequests(fundId, user.sub, query.status)
+    return this.fundsService.getJoinRequests(fundId, user.sub, status)
   }
 
   @Post(':fundId/join-requests/:requestId/approve')

@@ -17,9 +17,9 @@ export class CategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}
 
   @Get()
-  @ApiOperation({ summary: 'List categories', description: 'Get all categories for a fund' })
+  @ApiOperation({ summary: 'List subscribed categories', description: 'Get all subscribed (active) categories for a fund' })
   @ApiParam({ name: 'fundId', type: 'string', format: 'uuid', description: 'Fund ID' })
-  @ApiResponse({ status: 200, description: 'List of categories', type: [Category] })
+  @ApiResponse({ status: 200, description: 'List of subscribed categories', type: [Category] })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Not a member of this fund' })
   async list(
@@ -27,6 +27,22 @@ export class CategoriesController {
     @Param('fundId') fundId: string,
   ) {
     return this.categoriesService.listByFund(fundId, user.sub)
+  }
+
+  @Get('available')
+  @ApiOperation({ 
+    summary: 'List available default categories', 
+    description: 'Get all default categories with hierarchy and subscription status' 
+  })
+  @ApiParam({ name: 'fundId', type: 'string', format: 'uuid', description: 'Fund ID' })
+  @ApiResponse({ status: 200, description: 'List of available categories with hierarchy' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Not a member of this fund' })
+  async listAvailable(
+    @CurrentUser() user: JwtPayload,
+    @Param('fundId') fundId: string,
+  ) {
+    return this.categoriesService.listAvailableDefaultCategories(fundId, user.sub)
   }
 
   @Post()
@@ -76,8 +92,82 @@ export class CategoriesController {
     return this.categoriesService.remove(categoryId, user.sub, fundId)
   }
 
+  @Post('subscribe-all')
+  @ApiOperation({ 
+    summary: 'Subscribe all child categories', 
+    description: 'Subscribe all default child categories to this fund' 
+  })
+  @ApiParam({ name: 'fundId', type: 'string', format: 'uuid', description: 'Fund ID' })
+  @ApiResponse({ status: 200, description: 'All child categories subscribed successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Not a member of this fund' })
+  async subscribeAll(
+    @CurrentUser() user: JwtPayload,
+    @Param('fundId') fundId: string,
+  ) {
+    return this.categoriesService.subscribeAllChildCategories(fundId, user.sub)
+  }
+
+  @Post('parent/:parentId/subscribe-all')
+  @ApiOperation({ 
+    summary: 'Subscribe all children of a parent', 
+    description: 'Subscribe all child categories belonging to a parent category' 
+  })
+  @ApiParam({ name: 'fundId', type: 'string', format: 'uuid', description: 'Fund ID' })
+  @ApiParam({ name: 'parentId', type: 'string', format: 'uuid', description: 'Parent category ID' })
+  @ApiResponse({ status: 200, description: 'All children subscribed successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Not a member of this fund' })
+  @ApiResponse({ status: 404, description: 'Parent category not found' })
+  async subscribeAllChildren(
+    @CurrentUser() user: JwtPayload,
+    @Param('fundId') fundId: string,
+    @Param('parentId') parentId: string,
+  ) {
+    return this.categoriesService.subscribeAllChildrenOfParent(fundId, parentId, user.sub)
+  }
+
+  @Post(':categoryId/subscribe')
+  @ApiOperation({ 
+    summary: 'Subscribe to a category', 
+    description: 'Subscribe a child category to this fund (only child categories can be subscribed)' 
+  })
+  @ApiParam({ name: 'fundId', type: 'string', format: 'uuid', description: 'Fund ID' })
+  @ApiParam({ name: 'categoryId', type: 'string', format: 'uuid', description: 'Category ID (must be a child category)' })
+  @ApiResponse({ status: 200, description: 'Category subscribed successfully' })
+  @ApiResponse({ status: 400, description: 'Cannot subscribe to parent category' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Not a member of this fund' })
+  @ApiResponse({ status: 404, description: 'Category not found' })
+  async subscribe(
+    @CurrentUser() user: JwtPayload,
+    @Param('fundId') fundId: string,
+    @Param('categoryId') categoryId: string,
+  ) {
+    return this.categoriesService.subscribeCategory(fundId, categoryId, user.sub)
+  }
+
+  @Post(':categoryId/unsubscribe')
+  @ApiOperation({ 
+    summary: 'Unsubscribe from a category', 
+    description: 'Unsubscribe a category from this fund' 
+  })
+  @ApiParam({ name: 'fundId', type: 'string', format: 'uuid', description: 'Fund ID' })
+  @ApiParam({ name: 'categoryId', type: 'string', format: 'uuid', description: 'Category ID' })
+  @ApiResponse({ status: 200, description: 'Category unsubscribed successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Not a member of this fund' })
+  @ApiResponse({ status: 404, description: 'Category subscription not found' })
+  async unsubscribe(
+    @CurrentUser() user: JwtPayload,
+    @Param('fundId') fundId: string,
+    @Param('categoryId') categoryId: string,
+  ) {
+    return this.categoriesService.unsubscribeCategory(fundId, categoryId, user.sub)
+  }
+
   @Patch(':categoryId/toggle')
-  @ApiOperation({ summary: 'Toggle category in fund', description: 'Activate or deactivate a category in a fund (for default categories)' })
+  @ApiOperation({ summary: 'Toggle category in fund', description: 'Activate or deactivate a category in a fund (deprecated, use subscribe/unsubscribe instead)' })
   @ApiParam({ name: 'fundId', type: 'string', format: 'uuid', description: 'Fund ID' })
   @ApiParam({ name: 'categoryId', type: 'string', format: 'uuid', description: 'Category ID' })
   @ApiResponse({ status: 200, description: 'Category toggled successfully' })
