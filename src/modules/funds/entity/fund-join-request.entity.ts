@@ -27,6 +27,14 @@ export class FundJoinRequest extends BaseEntity {
   @Column({ type: 'enum', enum: JoinRequestStatus, default: JoinRequestStatus.PENDING })
   status!: JoinRequestStatus
 
+  @ApiPropertyOptional({ example: '550e8400-e29b-41d4-a716-446655440000', format: 'uuid', description: 'User ID who approved/rejected this request' })
+  @Column({ type: 'uuid', nullable: true })
+  reviewedById?: string | null
+
+  @ApiPropertyOptional({ example: '2024-01-15T10:35:00Z', description: 'When the request was approved/rejected' })
+  @Column({ type: 'timestamp', nullable: true })
+  reviewedAt?: Date | null
+
   @ApiPropertyOptional({ type: () => Fund, description: 'Associated fund' })
   @ManyToOne(() => Fund, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'fundId' })
@@ -36,6 +44,11 @@ export class FundJoinRequest extends BaseEntity {
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'userId' })
   user!: User
+
+  @ApiPropertyOptional({ type: () => User, description: 'User who reviewed this request' })
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'reviewedById' })
+  reviewedBy?: User | null
 
 }
 

@@ -1,4 +1,6 @@
 export enum FundMemberRole {
-    OWNER = 'owner',
-    MEMBER = 'member'
+  OWNER = 'owner',
+  ADMIN = 'admin',
+  MEMBER = 'member',
+  FOLLOWER = 'follower',
 }
