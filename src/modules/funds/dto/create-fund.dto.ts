@@ -15,6 +15,11 @@ export class CreateFundDto {
   @IsEnum(FundType)
   type!: FundType
 
+  @ApiPropertyOptionalCustom({ example: 'Family expense tracking fund', description: 'Fund description' })
+  @IsString()
+  @MaxLength(500)
+  description?: string
+
   @ApiPropertyOptionalCustom({ type: 'string', format: 'uuid', isArray: true })
   @IsArray()
   @IsUUID('all', { each: true })

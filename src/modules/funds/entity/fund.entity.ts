@@ -1,4 +1,4 @@
-import { Column, Entity, OneToMany } from 'typeorm'
+import { Column, Entity, Index, OneToMany } from 'typeorm'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 
 import { FundMember } from './fund-member.entity'
@@ -20,6 +20,15 @@ export class Fund extends BaseEntity {
   @ApiProperty({ example: '550e8400-e29b-41d4-a716-446655440000', format: 'uuid', description: 'Owner user ID' })
   @Column({ type: 'uuid' })
   ownerId!: string
+
+  @ApiProperty({ example: '023433', description: 'Unique fund share code (numberId)' })
+  @Column({ type: 'varchar', length: 6, unique: true, nullable: true })
+  @Index()
+  numberId?: string | null
+
+  @ApiPropertyOptional({ example: 'Family expense tracking fund', description: 'Fund description' })
+  @Column({ type: 'text', nullable: true })
+  description?: string | null
 
   @ApiPropertyOptional({ type: () => [FundMember], description: 'Fund memberships' })
   @OneToMany(() => FundMember, (member) => member.fund)

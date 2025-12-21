@@ -17,8 +17,10 @@ import { FundsService } from './funds.service'
 import { CreateFundDto } from './dto/create-fund.dto'
 import { UpdateFundDto } from './dto/update-fund.dto'
 import { AddFundMemberDto } from './dto/add-member.dto'
+import { PublicFundInfoDto } from './dto/public-fund-info.dto'
 import { Fund } from './entity/fund.entity'
 import { FundMember } from './entity/fund-member.entity'
+import { FundJoinRequest } from './entity/fund-join-request.entity'
 
 @ApiTags('funds')
 @ApiBearerAuth('JWT-auth')
@@ -41,6 +43,20 @@ export class FundsController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async create(@CurrentUser() user: JwtPayload, @Body() body: CreateFundDto) {
     return this.fundsService.create(user.sub, body)
+  }
+
+  @Get('search/:numberId')
+  @ApiOperation({ 
+    summary: 'Search fund by numberId', 
+    description: 'Search for a fund by its share code (numberId). Returns minimal public information only. Funds are PRIVATE and can only be found by exact code match.' 
+  })
+  @ApiParam({ name: 'numberId', type: 'string', description: 'Fund share code (6-digit number)', example: '023433' })
+  @ApiResponse({ status: 200, description: 'Public fund information', type: PublicFundInfoDto })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Fund not found' })
+  async searchByNumberId(@Param('numberId') numberId: string) {
+    const fund = await this.fundsService.findByNumberId(numberId)
+    return this.fundsService.getPublicFundInfo(fund.id)
   }
 
   @Get(':fundId')
@@ -122,5 +138,22 @@ export class FundsController {
   ) {
     await this.fundsService.removeMember(fundId, user.sub, memberId)
     return { success: true }
+  }
+
+  @Post(':fundId/join-requests')
+  @ApiOperation({ 
+    summary: 'Request to join fund', 
+    description: 'Send a join request to a fund. The request will be pending until approved by the fund owner.' 
+  })
+  @ApiParam({ name: 'fundId', type: 'string', format: 'uuid', description: 'Fund ID' })
+  @ApiResponse({ status: 201, description: 'Join request created successfully', type: FundJoinRequest })
+  @ApiResponse({ status: 400, description: 'Already a member or pending request exists' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Fund not found' })
+  async createJoinRequest(
+    @CurrentUser() user: JwtPayload,
+    @Param('fundId') fundId: string,
+  ) {
+    return this.fundsService.createJoinRequest(fundId, user.sub)
   }
 }

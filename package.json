@@ -11,7 +11,8 @@
     "start:dev": "cross-env NODE_ENV=development nest start --watch",
     "lint": "eslint \"src/**/*.ts\" --max-warnings=0",
     "test": "jest --passWithNoTests",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "migrate:funds-numberid": "ts-node -r tsconfig-paths/register scripts/migrate-funds-numberid.ts"
   },
   "dependencies": {
     "@nestjs/axios": "^4.0.0",
