@@ -24,11 +24,18 @@ export class MessagesService {
 
   async listByFund(fundId: string, userId: string) {
     await this.fundsService.assertMembership(fundId, userId)
-    return this.messageRepository.find({ where: { fundId }, order: { createdAt: 'DESC' } })
+    return this.messageRepository.find({
+      where: { fundId },
+      relations: ['fund', 'transaction', 'transaction.category', 'transaction.category.parent'],
+      order: { createdAt: 'DESC' },
+    })
   }
 
   async findByIdForUser(messageId: string, userId: string) {
-    const message = await this.messageRepository.findOne({ where: { id: messageId } })
+    const message = await this.messageRepository.findOne({
+      where: { id: messageId },
+      relations: ['fund', 'transaction', 'transaction.category', 'transaction.category.parent'],
+    })
     if (!message) {
       throw new NotFoundException('message not found')
     }
@@ -70,15 +77,31 @@ export class MessagesService {
       // Link transaction to message
       savedMessage.transactionId = transaction.id
       await this.messageRepository.save(savedMessage)
+      
+      // Reload message with relations to return complete data
+      return this.messageRepository.findOne({
+        where: { id: savedMessage.id },
+        relations: ['fund', 'transaction', 'transaction.category', 'transaction.category.parent'],
+      }) || savedMessage
     }
 
-    return savedMessage
+    // Reload message with relations even if no transaction was created
+    return this.messageRepository.findOne({
+      where: { id: savedMessage.id },
+      relations: ['fund', 'transaction', 'transaction.category', 'transaction.category.parent'],
+    }) || savedMessage
   }
 
   async update(messageId: string, userId: string, dto: UpdatemessageDto) {
     const message = await this.findByIdForUser(messageId, userId)
     Object.assign(message, dto)
-    return this.messageRepository.save(message)
+    await this.messageRepository.save(message)
+    
+    // Reload with relations to return complete data
+    return this.messageRepository.findOne({
+      where: { id: messageId },
+      relations: ['fund', 'transaction', 'transaction.category', 'transaction.category.parent'],
+    }) || message
   }
 
   async remove(messageId: string, userId: string) {
