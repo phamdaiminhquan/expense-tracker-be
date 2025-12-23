@@ -19,6 +19,7 @@ import { CreateFundDto } from './dto/create-fund.dto'
 import { UpdateFundDto } from './dto/update-fund.dto'
 import { AddFundMemberDto } from './dto/add-member.dto'
 import { UpdateMemberRoleDto } from './dto/update-member-role.dto'
+import { CloseDialogCateDto } from './dto/close-dialog-cate.dto'
 import { MembershipStatusDto } from './dto/membership-status.dto'
 import { PublicFundInfoDto } from './dto/public-fund-info.dto'
 import { FundDto } from './dto/fund.dto'
@@ -274,6 +275,24 @@ export class FundsController {
     @Param('requestId') requestId: string,
   ) {
     return this.fundsService.rejectJoinRequest(fundId, requestId, user.sub)
+  }
+
+  @Patch(':fundId/dialog-cate/close')
+  @ApiOperation({
+    summary: 'Close category dialog',
+    description: 'Set isOpenDialogCate to false for the fund (owner/admin only)',
+  })
+  @ApiParam({ name: 'fundId', type: 'string', format: 'uuid', description: 'Fund ID' })
+  @ApiResponse({ status: 200, description: 'Dialog closed successfully', type: Fund })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Only owners and admins can perform this action' })
+  @ApiResponse({ status: 404, description: 'Fund not found' })
+  async closeDialogCate(
+    @CurrentUser() user: JwtPayload,
+    @Param('fundId') fundId: string,
+    @Body() _body: CloseDialogCateDto,
+  ) {
+    return this.fundsService.closeDialogCate(fundId, user.sub)
   }
 
   @Patch(':fundId/members/:memberId/role')

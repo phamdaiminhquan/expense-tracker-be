@@ -454,6 +454,15 @@ export class FundsService {
   }
 
   /**
+   * Close category dialog
+   */
+  async closeDialogCate(fundId: string, actorId: string): Promise<Fund> {
+    await this.assertAdminOrOwner(fundId, actorId)
+    await this.fundRepository.update({ id: fundId }, { isOpenDialogCate: false })
+    return this.findByIdOrThrow(fundId)
+  }
+
+  /**
    * Update member role
    */
   async updateMemberRole(

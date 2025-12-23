@@ -38,14 +38,19 @@ export class Fund extends BaseEntity {
   @Column({ type: 'uuid', nullable: true })
   lastMessageId?: string | null
 
-  @ApiPropertyOptional({ 
+    @ApiPropertyOptional({ 
     example: '2024-01-01T00:00:00.000Z', 
     description: 'Timestamp of the last message (denormalized for sorting performance)' 
   })
   @Column({ type: 'timestamp', nullable: true })
   lastMessageTimestamp?: Date | null
 
+  @ApiPropertyOptional({ example: true, description: 'Whether the category dialog is open' })
+  @Column({ type: 'boolean', default: true })
+  isOpenDialogCate!: boolean
+
   @ApiPropertyOptional({ type: () => [FundMember], description: 'Fund memberships' })
+
   @OneToMany(() => FundMember, (member) => member.fund)
   memberships!: FundMember[]
 
