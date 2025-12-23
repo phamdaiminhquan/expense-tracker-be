@@ -31,17 +31,12 @@ export class FundsService {
     private readonly usersService: UsersService,
   ) {}
 
-  /**
-   * Generates a unique 6-digit numberId for a fund
-   * Format: 000000-999999 (padded with zeros)
-   */
   private async generateNumberId(): Promise<string> {
     let numberId: string
     let exists = true
     let attempts = 0
     const maxAttempts = 10
 
-    // Generate random 6-digit number (000000-999999), padded with zeros
     while (exists && attempts < maxAttempts) {
       const randomNum = Math.floor(Math.random() * 1000000) // 0-999999
       numberId = randomNum.toString().padStart(6, '0')
@@ -117,10 +112,6 @@ export class FundsService {
     return this.memberRepository.find({ where: { fundId } })
   }
 
-  /**
-   * Update fund's lastMessageId and lastMessageTimestamp
-   * Called when a message is created/deleted to maintain denormalized data
-   */
   async updateFundLastMessage(fundId: string): Promise<void> {
     // Get the most recent message for this fund
     const lastMessage = await this.messageRepository.findOne({
@@ -138,27 +129,17 @@ export class FundsService {
     )
   }
 
-  /**
-   * Find all funds for a user with lastMessage and sorting by lastActivityTime
-   * Uses denormalized lastMessageId and lastMessageTimestamp for better performance
-   * lastActivityTime = COALESCE(lastMessageTimestamp, fund.updatedAt)
-   */
-  async findAllForUser(userId: string, pageOptions?: PageOptionsDto): Promise<{ data: FundDto[]; total: number }> {
+  async findAllForUser(userId: string, pageOptions?: PageOptionsDto) {
     const memberships = await this.memberRepository.find({ where: { userId } })
-    if (memberships.length === 0) {
-      return { data: [], total: 0 }
-    }
+    if (memberships.length === 0) return { data: [], total: 0 }
 
     const fundIds = memberships.map((membership) => membership.fundId)
 
-    // Load all funds with lastMessage relation
-    // We'll sort in memory because TypeORM doesn't support COALESCE expression in ORDER BY easily
     const allFunds = await this.fundRepository.find({
       where: { id: In(fundIds) },
       relations: ['lastMessage'],
     })
 
-    // Calculate lastActivityTime for each fund and sort
     const fundsWithActivity = allFunds.map((fund) => {
       const lastActivityTime = fund.lastMessageTimestamp 
         ? new Date(fund.lastMessageTimestamp) 
