@@ -1,12 +1,16 @@
 import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException, forwardRef } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { In, Repository } from 'typeorm'
+import { In, Repository, SelectQueryBuilder } from 'typeorm'
 
 import { Fund } from './entity/fund.entity'
 import { FundMember } from './entity/fund-member.entity'
 import { FundJoinRequest, JoinRequestStatus } from './entity/fund-join-request.entity'
+import { Message } from '../messages/message.entity'
 import { CreateFundDto } from './dto/create-fund.dto'
 import { UpdateFundDto } from './dto/update-fund.dto'
+import { FundDto } from './dto/fund.dto'
+import { FundLastMessageDto } from './dto/fund-last-message.dto'
+import { PageOptionsDto } from '../../common/dto/page-options.dto'
 import { FundMemberRole } from './enums/fund-member-role.enum'
 import { CategoriesService } from '../categories/categories.service'
 import { UsersService } from '../users/users.service'
@@ -20,6 +24,8 @@ export class FundsService {
     private readonly memberRepository: Repository<FundMember>,
     @InjectRepository(FundJoinRequest)
     private readonly joinRequestRepository: Repository<FundJoinRequest>,
+    @InjectRepository(Message)
+    private readonly messageRepository: Repository<Message>,
     @Inject(forwardRef(() => CategoriesService))
     private readonly categoriesService: CategoriesService,
     private readonly usersService: UsersService,
@@ -111,14 +117,103 @@ export class FundsService {
     return this.memberRepository.find({ where: { fundId } })
   }
 
-  async findAllForUser(userId: string) {
+  /**
+   * Update fund's lastMessageId and lastMessageTimestamp
+   * Called when a message is created/deleted to maintain denormalized data
+   */
+  async updateFundLastMessage(fundId: string): Promise<void> {
+    // Get the most recent message for this fund
+    const lastMessage = await this.messageRepository.findOne({
+      where: { fundId },
+      order: { createdAt: 'DESC' },
+    })
+
+    // Update fund with lastMessage info (or null if no messages)
+    await this.fundRepository.update(
+      { id: fundId },
+      {
+        lastMessageId: lastMessage?.id || null,
+        lastMessageTimestamp: lastMessage?.createdAt || null,
+      },
+    )
+  }
+
+  /**
+   * Find all funds for a user with lastMessage and sorting by lastActivityTime
+   * Uses denormalized lastMessageId and lastMessageTimestamp for better performance
+   * lastActivityTime = COALESCE(lastMessageTimestamp, fund.updatedAt)
+   */
+  async findAllForUser(userId: string, pageOptions?: PageOptionsDto): Promise<{ data: FundDto[]; total: number }> {
     const memberships = await this.memberRepository.find({ where: { userId } })
     if (memberships.length === 0) {
-      return []
+      return { data: [], total: 0 }
     }
 
     const fundIds = memberships.map((membership) => membership.fundId)
-    return this.fundRepository.find({ where: { id: In(fundIds) } })
+
+    // Load all funds with lastMessage relation
+    // We'll sort in memory because TypeORM doesn't support COALESCE expression in ORDER BY easily
+    const allFunds = await this.fundRepository.find({
+      where: { id: In(fundIds) },
+      relations: ['lastMessage'],
+    })
+
+    // Calculate lastActivityTime for each fund and sort
+    const fundsWithActivity = allFunds.map((fund) => {
+      const lastActivityTime = fund.lastMessageTimestamp 
+        ? new Date(fund.lastMessageTimestamp) 
+        : fund.updatedAt
+      return {
+        fund,
+        lastActivityTime,
+      }
+    })
+
+    // Apply sorting
+    const orderDirection = pageOptions?.orderType === 'ASC' ? 'ASC' : 'DESC'
+    const sortFn = (a: typeof fundsWithActivity[0], b: typeof fundsWithActivity[0]) => {
+      const timeA = a.lastActivityTime.getTime()
+      const timeB = b.lastActivityTime.getTime()
+      return orderDirection === 'ASC' ? timeA - timeB : timeB - timeA
+    }
+    fundsWithActivity.sort(sortFn)
+
+    // Get total before pagination
+    const total = fundsWithActivity.length
+
+    // Apply pagination
+    const skip = pageOptions?.skip || 0
+    const take = pageOptions?.take || 10
+    const paginatedFunds = fundsWithActivity.slice(skip, skip + take)
+    
+    // Extract funds from sorted array
+    const funds = paginatedFunds.map(item => item.fund)
+
+    // Map to DTOs
+    const fundDtos: FundDto[] = funds.map((fund) => {
+      const lastMessageDto: FundLastMessageDto | null = fund.lastMessage
+        ? {
+            id: fund.lastMessage.id,
+            message: fund.lastMessage.message,
+            createdAt: fund.lastMessage.createdAt,
+            processedAt: fund.lastMessage.processedAt || null,
+          }
+        : null
+
+      return {
+        id: fund.id,
+        name: fund.name,
+        type: fund.type,
+        ownerId: fund.ownerId,
+        numberId: fund.numberId,
+        description: fund.description,
+        createdAt: fund.createdAt,
+        updatedAt: fund.updatedAt,
+        lastMessage: lastMessageDto,
+      }
+    })
+
+    return { data: fundDtos, total }
   }
 
   async findByIdOrThrow(fundId: string): Promise<Fund> {

@@ -62,6 +62,9 @@ export class MessagesService {
     // save message first
     const savedMessage = await this.messageRepository.save(message)
 
+    // Update fund's lastMessage (denormalized for performance)
+    await this.fundsService.updateFundLastMessage(fundId)
+
     // If AI extracted transaction data, create a transaction
     if (aiPayload.spendValue !== null || aiPayload.earnValue !== null || aiPayload.content) {
       const transaction = await this.transactionsService.create({
@@ -109,7 +112,13 @@ export class MessagesService {
     if (!message) {
       return null
     }
+    
+    const fundId = message.fundId
     await this.messageRepository.softDelete({ id: messageId })
+    
+    // Update fund's lastMessage after deletion (might be previous message now)
+    await this.fundsService.updateFundLastMessage(fundId)
+    
     return { success: true }
   }
 

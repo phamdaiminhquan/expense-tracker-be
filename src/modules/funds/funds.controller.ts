@@ -9,7 +9,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common'
-import { ApiBearerAuth, ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger'
+import { ApiBearerAuth, ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger'
 
 import { JwtAccessGuard } from '../auth/guards/jwt-access.guard'
 import { CurrentUser } from '../../common/decorators/current-user.decorator'
@@ -21,6 +21,8 @@ import { AddFundMemberDto } from './dto/add-member.dto'
 import { UpdateMemberRoleDto } from './dto/update-member-role.dto'
 import { MembershipStatusDto } from './dto/membership-status.dto'
 import { PublicFundInfoDto } from './dto/public-fund-info.dto'
+import { FundDto } from './dto/fund.dto'
+import { PageOptionsDto } from '../../common/dto/page-options.dto'
 import { Fund } from './entity/fund.entity'
 import { FundMember } from './entity/fund-member.entity'
 import { FundJoinRequest, JoinRequestStatus } from './entity/fund-join-request.entity'
@@ -33,11 +35,38 @@ export class FundsController {
   constructor(private readonly fundsService: FundsService) { }
 
   @Get()
-  @ApiOperation({ summary: 'List all funds', description: 'Get all funds the current user is a member of' })
-  @ApiResponse({ status: 200, description: 'List of funds', type: [Fund] })
+  @ApiOperation({ 
+    summary: 'List all funds', 
+    description: 'Get all funds the current user is a member of. Sorted by lastActivityTime (COALESCE(lastMessage.createdAt, fund.updatedAt)) DESC by default. Returns lastMessage for each fund.' 
+  })
+  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number (1-based)', example: 1 })
+  @ApiQuery({ name: 'take', required: false, type: Number, description: 'Items per page', example: 10 })
+  @ApiQuery({ name: 'orderBy', required: false, type: String, description: 'Sort field (default: lastActivityTime)', example: 'lastActivityTime' })
+  @ApiQuery({ name: 'orderType', required: false, enum: ['ASC', 'DESC'], description: 'Sort order (default: DESC)', example: 'DESC' })
+  @ApiQuery({ name: 'search', required: false, type: String, description: 'Search query' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'List of funds with pagination', 
+    schema: {
+      type: 'object',
+      properties: {
+        data: {
+          type: 'array',
+          items: { $ref: '#/components/schemas/FundDto' }
+        },
+        total: {
+          type: 'number',
+          example: 25
+        }
+      }
+    }
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async list(@CurrentUser() user: JwtPayload) {
-    return this.fundsService.findAllForUser(user.sub)
+  async list(
+    @CurrentUser() user: JwtPayload,
+    @Query() pageOptions: PageOptionsDto,
+  ) {
+    return this.fundsService.findAllForUser(user.sub, pageOptions)
   }
 
   @Post()

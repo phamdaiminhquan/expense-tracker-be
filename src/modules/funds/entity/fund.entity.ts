@@ -1,4 +1,4 @@
-import { Column, Entity, Index, OneToMany } from 'typeorm'
+import { Column, Entity, Index, JoinColumn, ManyToOne, OneToMany } from 'typeorm'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 
 import { FundMember } from './fund-member.entity'
@@ -30,6 +30,21 @@ export class Fund extends BaseEntity {
   @Column({ type: 'text', nullable: true })
   description?: string | null
 
+  @ApiPropertyOptional({ 
+    example: '550e8400-e29b-41d4-a716-446655440000', 
+    format: 'uuid', 
+    description: 'ID of the last message in this fund (denormalized for performance)' 
+  })
+  @Column({ type: 'uuid', nullable: true })
+  lastMessageId?: string | null
+
+  @ApiPropertyOptional({ 
+    example: '2024-01-01T00:00:00.000Z', 
+    description: 'Timestamp of the last message (denormalized for sorting performance)' 
+  })
+  @Column({ type: 'timestamp', nullable: true })
+  lastMessageTimestamp?: Date | null
+
   @ApiPropertyOptional({ type: () => [FundMember], description: 'Fund memberships' })
   @OneToMany(() => FundMember, (member) => member.fund)
   memberships!: FundMember[]
@@ -37,5 +52,10 @@ export class Fund extends BaseEntity {
   @ApiPropertyOptional({ type: () => [Message], description: 'Fund messages' })
   @OneToMany(() => Message, (message) => message.fund)
   messages!: Message[]
+
+  @ApiPropertyOptional({ type: () => Message, description: 'Last message relation' })
+  @ManyToOne(() => Message, { nullable: true })
+  @JoinColumn({ name: 'lastMessageId' })
+  lastMessage?: Message | null
 
 }
