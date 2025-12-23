@@ -27,6 +27,9 @@ export class FundDto {
   @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
   updatedAt!: Date
 
+  @ApiPropertyOptional({ example: true })
+  isOpenDialogCate!: boolean
+
   @ApiPropertyOptional({
     type: () => FundLastMessageDto,
     nullable: true,

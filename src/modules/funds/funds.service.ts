@@ -190,6 +190,7 @@ export class FundsService {
         description: fund.description,
         createdAt: fund.createdAt,
         updatedAt: fund.updatedAt,
+        isOpenDialogCate: fund.isOpenDialogCate,
         lastMessage: lastMessageDto,
       }
     })
