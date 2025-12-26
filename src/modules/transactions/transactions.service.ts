@@ -48,7 +48,7 @@ export class TransactionsService {
     return this.transactionRepository.save(transaction)
   }
 
-  async delete(id: string): Promise<void> {
+  async delete(id: string) {
     await this.transactionRepository.softDelete({ id })
   }
 }

@@ -26,7 +26,7 @@ export class Message extends BaseEntity {
 
   @ApiPropertyOptional({ example: 'AI parsing failed: invalid format', description: 'Error message if processing failed' })
   @Column({ type: 'text', nullable: true })
-  failureReason?: string
+  failureReason?: string | null
 
   @ApiProperty({ example: '550e8400-e29b-41d4-a716-446655440000', format: 'uuid', description: 'Fund ID' })
   @Column({ type: 'uuid' })
