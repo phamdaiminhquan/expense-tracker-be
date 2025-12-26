@@ -19,31 +19,34 @@ export class StatisticsService {
   ) {}
 
   async fundSummary(fundId: string, userId: string, query: StatisticsQuery) {
-    await this.fundsService.assertMembership(fundId, userId)
+    await this.fundsService.assertMembership(fundId, userId);
 
-    const builder = this.messageRepository
-      .createQueryBuilder('message')
-      .where('message.fundId = :fundId', { fundId })
-      .andWhere('message.status = :status', { status: 'processed' })
+    // Query from Transaction entity instead of Message
+    const transactionRepo = this.messageRepository.manager.getRepository('Transaction');
+    const qb = transactionRepo
+      .createQueryBuilder('transaction')
+      .where('transaction.fundId = :fundId', { fundId });
 
     if (query.from) {
-      builder.andWhere('message.createdAt >= :from', { from: query.from })
+      qb.andWhere('transaction.createdAt >= :from', { from: query.from });
     }
-
     if (query.to) {
-      builder.andWhere('message.createdAt <= :to', { to: query.to })
+      qb.andWhere('transaction.createdAt <= :to', { to: query.to });
     }
 
-    const [totalSpend, totalEarn] = await Promise.all([
-      builder.clone().select('COALESCE(SUM(message.spendValue), 0)', 'total').getRawOne<{ total: string }>(),
-      builder.clone().select('COALESCE(SUM(message.earnValue), 0)', 'total').getRawOne<{ total: string }>(),
-    ])
+    const [spendResult, earnResult] = await Promise.all([
+      qb.clone().select('COALESCE(SUM(transaction.spendValue), 0)', 'total').getRawOne<{ total: string }>(),
+      qb.clone().select('COALESCE(SUM(transaction.earnValue), 0)', 'total').getRawOne<{ total: string }>(),
+    ]);
+
+    const totalSpend = Number(spendResult?.total ?? 0);
+    const totalEarn = Number(earnResult?.total ?? 0);
 
     return {
       fundId,
-      totalSpend: Number(totalSpend?.total ?? 0),
-      totalEarn: Number(totalEarn?.total ?? 0),
-      net: Number(totalEarn?.total ?? 0) - Number(totalSpend?.total ?? 0),
-    }
+      totalSpend,
+      totalEarn,
+      net: totalEarn - totalSpend,
+    };
   }
 }
